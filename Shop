@@ -1,0 +1,72 @@
+-- Peripheral Setup
+local monitor = peripheral.find("monitor")
+local barrel = peripheral.wrap("right")   -- Barrel with emeralds (payment)
+local dropper = peripheral.wrap("left")   -- Dropper that dispenses the item
+
+-- Config
+local itemName = "minecraft:emerald"  -- What counts as payment
+local price = 1                       -- How many emeralds per item
+
+-- UI Function
+local function drawUI()
+    monitor.clear()
+    monitor.setCursorPos(1, 1)
+    monitor.write("Welcome to the Shop!")
+    monitor.setCursorPos(1, 3)
+    monitor.write("[ Buy Bread - 1 Emerald ]")
+end
+
+-- Payment Check (uses getItemDetail for accurate data)
+local function hasEnoughPayment()
+    local slots = barrel.list()
+    local total = 0
+
+    for slot, _ in pairs(slots) do
+        local item = barrel.getItemDetail(slot)
+        if item and item.name == itemName then
+            total = total + item.count
+        end
+    end
+
+    return total >= price
+end
+
+-- Remove Payment
+local function takePayment()
+    local slots = barrel.list()
+    local remaining = price
+
+    for slot, _ in pairs(slots) do
+        local item = barrel.getItemDetail(slot)
+        if item and item.name == itemName then
+            local toTake = math.min(remaining, item.count)
+            barrel.removeItemFromSlot(slot, toTake)
+            remaining = remaining - toTake
+            if remaining <= 0 then break end
+        end
+    end
+end
+
+-- Run Shop
+monitor.setTextScale(1)
+drawUI()
+
+while true do
+    local event, side, x, y = os.pullEvent("monitor_touch")
+
+    if y == 3 then
+        drawUI()
+        monitor.setCursorPos(1, 5)
+
+        if hasEnoughPayment() then
+            monitor.write("Payment accepted.")
+            takePayment()
+            dropper.drop(1)
+        else
+            monitor.write("Insufficient payment!")
+        end
+
+        sleep(2)
+        drawUI()
+    end
+end
