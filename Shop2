@@ -1,1 +1,63 @@
+-- === Config ===
+local monitor = peripheral.find("monitor")
+local modemSide = "front"
+rednet.open(modemSide)
 
+-- Map item buttons to dropper computers
+local itemMap = {
+    bread = {label = "Buy Bread", y = 3, remoteID = 3, side = "right"},
+    apple = {label = "Buy Apple", y = 5, remoteID = 4, side = "right"},
+    steak = {label = "Buy Steak", y = 7, remoteID = 5, side = "right"}
+}
+
+-- === UI Drawing ===
+local function drawUI()
+    monitor.setBackgroundColor(colors.black)
+    monitor.setTextColor(colors.white)
+    monitor.clear()
+
+    monitor.setCursorPos(1, 1)
+    monitor.write("Welcome to the Multi-Item Shop!")
+
+    for key, item in pairs(itemMap) do
+        monitor.setCursorPos(1, item.y)
+        monitor.setBackgroundColor(colors.green)
+        monitor.setTextColor(colors.black)
+        monitor.write("[ " .. item.label .. " ]")
+    end
+
+    monitor.setBackgroundColor(colors.black)
+    monitor.setTextColor(colors.white)
+end
+
+-- === Rednet Send ===
+local function sendPulse(remoteID, side)
+    rednet.send(remoteID, {
+        command = "pulse",
+        side = side
+    })
+end
+
+-- === Main ===
+monitor.setTextScale(1)
+drawUI()
+
+while true do
+    local event, side, x, y = os.pullEvent("monitor_touch")
+
+    for key, item in pairs(itemMap) do
+        if y == item.y then
+            monitor.setCursorPos(1, 9)
+            monitor.setTextColor(colors.yellow)
+            monitor.write("Processing: " .. item.label .. "       ")
+
+            sendPulse(item.remoteID, item.side)
+
+            monitor.setCursorPos(1, 10)
+            monitor.setTextColor(colors.lime)
+            monitor.write("✅ Dispense command sent!")
+            sleep(2)
+            drawUI()
+        end
+    end
+end
